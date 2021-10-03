@@ -4,9 +4,9 @@ import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.broker.kafka.{KafkaProperties, PartitionKeyStrategy}
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json._
 
-object HelloWorldService  {
+object HelloWorldService {
   val TOPIC_NAME = "greetings"
 }
 
@@ -63,7 +63,7 @@ trait HelloWorldService extends Service {
 /**
   * The greeting message class.
   */
-case class GreetingMessage(message: String)
+case class GreetingMessage(message: String, partOfDay: PartOfDay)
 
 object GreetingMessage {
   /**
@@ -73,7 +73,6 @@ object GreetingMessage {
     */
   implicit val format: Format[GreetingMessage] = Json.format[GreetingMessage]
 }
-
 
 
 /**
@@ -89,4 +88,21 @@ object GreetingMessageChanged {
     * This will be picked up by a Lagom implicit conversion from Play's JSON format to Lagom's message serializer.
     */
   implicit val format: Format[GreetingMessageChanged] = Json.format[GreetingMessageChanged]
+}
+
+sealed trait PartOfDay
+
+case object Morning extends PartOfDay {
+  implicit val reads: Reads[Morning.type] = Json.reads[Morning.type]
+  implicit val writes: Writes[Morning.type] = Json.writes[Morning.type]
+}
+
+object PartOfDay {
+  implicit val cfg = JsonConfiguration(
+    // ... indicating the lower-cased name of sub-type
+    typeNaming = JsonNaming { fullName =>
+      fullName.drop(27 /* remove pkg */ ).toLowerCase
+    }
+  )
+  implicit val format: OFormat[PartOfDay] = Json.format[PartOfDay]
 }
